@@ -496,7 +496,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Port output queue length for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: <h1>" & deviceIP & " " & ifDescr & " Output Queue Length</h1>"
@@ -542,7 +542,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 4294967296"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Interface Discards for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Discards</h1>"
@@ -589,7 +589,7 @@ Sub mrtgFiles
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,withzeroes"
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Port collisions for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: <h1>" & deviceIP & " " & ifDescr & " Collisions</h1>"
@@ -635,7 +635,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 4294967296"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Port error for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Errors</h1>"
@@ -683,7 +683,7 @@ Sub mrtgFiles
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,withzeroes"
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 12500"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Port CRC for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: <h1>" & deviceIP & " " & ifDescr & " CRC</h1>"
@@ -730,7 +730,7 @@ Sub mrtgFiles
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,withzeroes"
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 12500"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Interface Queue Drops for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Output Queue Drops</h1>"
@@ -776,7 +776,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Port input unknown protocol for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Unknown Protocol</h1>"
@@ -860,7 +860,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Port output queue length for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: <h1>" & deviceIP & " " & ifDescr & " Output Queue Length</h1>"
@@ -905,7 +905,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 4294967296"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Interface Discards for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Discards</h1>"
@@ -950,7 +950,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Port collisions for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: <h1>" & deviceIP & " " & ifDescr & " Collisions</h1>"
@@ -995,7 +995,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 4294967296"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Port error for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Errors</h1>"
@@ -1040,7 +1040,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 12500"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Port CRC for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: <h1>" & deviceIP & " " & ifDescr & " CRC</h1>"
@@ -1085,7 +1085,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,gauge,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 12500"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Interface Queue Drops for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Output Queue Drops</h1>"
@@ -1130,7 +1130,7 @@ Sub mrtgFiles
 											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: unknaszero"
 											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: nopercent,withzeroes"
 											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
-											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
 											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1250000"
 											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Port input unknown protocol for " & deviceIP & " " & ifDescr
 											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Unknown Protocol</h1>"
