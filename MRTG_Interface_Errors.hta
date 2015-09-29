@@ -1,0 +1,1258 @@
+<html>
+<head>
+<title>MRTG Configuration Wizard</title>
+<meta http-equiv = "content-script-type" content = "text/vbscript"/>
+<HTA:Application
+ApplicationName = MRTG_cfg
+BORDERSTYLE = normal
+ShowInTaskBar = Yes
+MaximizeButton = None
+MinimizeButton = None
+WindowState = Normal
+SINGLEINSTANCE = No
+SCROLL="no"
+> 
+</HEAD>
+<SCRIPT Language="VBScript">
+Sub Window_Onload
+	window.resizeto 850, 650
+	window.moveto 600,200
+End Sub
+
+Sub RunReload
+    Location.Reload(True)
+End Sub
+
+Public Sub snmp_lists
+	Const ForReading = 1, ForWriting = 2, ForAppending = 8
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("WScript.Shell")
+	interfaceIndex.InnerHTML = ""
+	nameCheck.InnerHTML = ""
+	snmpROcheck.InnerHTML = ""
+	progress.InnerHTML = ""
+	finalResults.InnerHTML = ""
+	
+	If snmpCheck.deviceName.value = "" Then
+		nameCheck.InnerHTML = "<font color=red>Missing device name.</font>"
+		progress.InnerHTML = "<font color=red>Missing device name.</font>"
+		Exit Sub
+	Else
+		nameCheck.InnerHTML = ""
+	
+	End If
+	
+	If snmpCheck.snmpRO.value = "" Then
+		snmpROcheck.InnerHTML = "<font color=red>Missing SNMP RO.</font>"
+		progress.InnerHTML = "<font color=red>Missing SNMP RO.</font>"
+		Exit Sub
+	Else
+		snmpROcheck.InnerHTML = ""
+	End If
+	
+	progress.InnerHTML = "Checking relevant folder."
+	If snmpCheck.mrtgFolder.value = "" or Not(objFSO.FolderExists (snmpCheck.mrtgFolder.value)) Then
+		mrtgFolderCheck.InnerHTML = "<font color=red>Missing MRTG folder.</font>"
+		progress.InnerHTML = "<font color=red>Missing MRTG folder.</font>"
+		Exit Sub
+	ElseIf objFSO.FolderExists (snmpCheck.mrtgFolder.value) Then
+		mrtgFolderCheck.InnerHTML = "<font color=green>Folder present.</font>"
+	End If
+	
+	ifDescFile = ".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc"
+	ifTypeFile = ".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType"	
+	progress.InnerHTML = "Checking SNMP."
+	document.body.style.cursor = "wait"
+	strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " ifDesc > " & ifDescFile
+	objShell.Run strCommand1,0, true
+	progress.InnerHTML = "Checking SNMP."
+	document.body.style.cursor = "wait"
+	strCommand2 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " ifType > " & ifTypeFile
+	objShell.Run strCommand2,0, true
+	progress.InnerHTML = "Checking SNMP."
+	document.body.style.cursor = "auto"
+	
+	If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc") Then 
+		optionValues = "<table width=100%>" &_
+		"<tr><td colspan=2>Step 2 </td></tr>" &_
+		"<tr><td colspan=2>Please select an interface and type of graphs for MRTG polling : </td></tr>" &_
+		"<tr><td width=40%><select size=5 name=ifIndex>"
+		Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc", ForReading, False)
+		n = 0
+			Do While objRead.AtEndOfStream <> True
+					strLine = Trim(objRead.Readline)
+					n = n + 1
+				If Len (strLine) > 1 Then
+					'msgbox strLine
+					'strLine = Replace (strLine,"RFC1213-MIB::ifDescr.","")
+					strLineSplit = Split (strLine,".")
+					strLineSplit1 = strLineSplit(Ubound(strLineSplit,1))
+					strLineSplit2 = Split(strLineSplit1," ")
+					optionValues = optionValues & "<option value=" & strLineSplit2(0) & ">" & strLineSplit2(1) & "</option>"
+					strLineSplit2tester = strLineSplit2(0)
+				End If
+			Loop
+		objRead.close
+		If n > 0 Then
+		progress.InnerHTML = "<font color=green>SNMP check success.</font>"
+		optionValues = optionValues & "</select></td>"
+		optionValues = optionValues & "<td>"
+		optionValues = optionValues & "<form name=toPlot><table width=100%><tr>"
+		
+		
+		optionValues = optionValues & "<td colspan=2><input type=checkbox name=mrtgGrpah value=selectAll checked> <b><u>Select All</b></u></td>"
+		optionValues = optionValues & "</tr><tr>"					
+		
+		optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=uitilised> Traffic Utilisation</td>"
+		toOption = 1
+		
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.2.1.2.2.1.21." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			ifOutQLen = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen", ForReading, False)
+					strLine = Trim(objRead.Readall)
+					If Len (strLine) > 2 Then
+						ifOutQLen = 1
+					End If
+				objRead.close
+				If ifOutQLen = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=ifOutQLen> Output Queue Length</td>"
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen")
+			End If
+	
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.2.1.2.2.1.13." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".discards"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			discards = 0			
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".discards", ForReading, False)
+					strLine = Trim(objRead.ReadAll)
+					If Len (strLine) > 2 Then
+						discards = 1
+					End If
+				objRead.close
+				If discards = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=discards> Interface Discards</td>"
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards")
+			End If
+		
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.4.1.9.2.2.1.1.25." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			collisions = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions", ForReading, False)
+					strLine = Trim(objRead.ReadAll)
+					If Len (strLine) > 2 Then
+						collisions = 1
+					End If
+				objRead.close
+				If collisions = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=collisions> Interface Collisions</td>"	
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions")
+			End If		
+
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.2.1.2.2.1.14." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".errors"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			errors = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".errors", ForReading, False)
+					strLine = Trim(objRead.ReadAll)
+					If Len (strLine) > 2 Then
+						errors = 1
+					End If
+				objRead.close
+				If errors = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=error> Interface Errors</td>"
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors")
+			End If
+
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.4.1.9.2.2.1.1.12." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".crc"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			crc = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".crc", ForReading, False)
+					strLine = Trim(objRead.ReadAll)
+					If Len (strLine) > 2 Then
+						crc = 1
+					End If
+				objRead.close
+				If crc = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=crc> CRC errors</td>"	
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc")
+			End If		
+
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.4.1.9.2.2.1.1.26." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".drops"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			drops = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".drops", ForReading, False)
+					strLine = Trim(objRead.ReadAll)
+					If Len (strLine) > 2 Then
+						drops = 1
+					End If
+				objRead.close
+				If drops = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=drops> Queue Drops</td>"
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops")
+			End If		
+			
+			strCommand1 = "cmd /c .\bin\snmpwalk.exe -v2c -OSq -c " & trim(snmpCheck.snmpRO.value) & " " & trim(snmpCheck.deviceName.value) & " 1.3.6.1.2.1.2.2.1.15." & strLineSplit2tester & " > " & ".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos"
+			document.body.style.cursor = "wait"
+			objShell.Run strCommand1,0, true
+			document.body.style.cursor = "auto"
+			ifInUnknownProtos = 0
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos", ForReading, False)
+						strLine = Trim(objRead.ReadAll)
+						If Len (strLine) > 2 Then
+							ifInUnknownProtos = 1
+						End If
+				objRead.close
+				If ifInUnknownProtos = 1 Then
+					optionValues = optionValues & "<td><input type=checkbox name=mrtgGrpah value=ifInUnknownProtos> Unknown Protocols</td>"
+					toOption = toOption + 1
+				End If
+				If (toOption mod 2) = 0 Then											
+					optionValues = optionValues & "</tr><tr>"
+				End If
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos")
+			End If
+			
+
+		optionValues = optionValues & "</tr></table></form>"
+		optionValues = optionValues & "</td></tr></table>"
+		optionValues = optionValues & "<hr>"
+		optionValues = optionValues & "<table width=100%>"
+		optionValues = optionValues & "<tr><td>Step 3</td></tr>"
+		optionValues = optionValues & "<tr><td><input id=runbutton  class=button type=button value=" & """" & "Create MRTG Files" & """" & "name=mrtg_maker  onClick=mrtgFiles></td></tr>"
+		interfaceIndex.InnerHTML = optionValues
+		Else 
+			interfaceIndex.InnerHTML = ""
+			progress.InnerHTML = "<font color=red>SNMP query failed.</font>"
+			optionValues = ""
+		End If	
+	End If 
+Set objFSO = Nothing
+Set objShell = Nothing	
+End Sub
+
+Sub mrtgFiles
+	Const ForReading = 1, ForWriting = 2, ForAppending = 8
+	Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objShell = CreateObject("WScript.Shell")
+	choosePlot = 0
+	chooseInterface = 0
+	For each k in document.getElementByid("ifIndex")
+		If k.selected Then
+			chooseInterface = 1
+			progress.InnerHTML = "Creating MRTG files and folders...."
+			If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc") and objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType") Then
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc", ForReading, False)
+					Do While objRead.AtEndOfStream <> True
+						'msgbox strLine
+						strLine = Trim(objRead.Readline)
+						
+						'strLine = Replace (strLine,"RFC1213-MIB::ifDescr.","")
+						'strLine = Replace (strLine,"""","")
+						'strLineSplit = Split (strLine," ")
+						strLineSplit = Split (strLine,".")
+						strLineSplit1 = strLineSplit(Ubound(strLineSplit,1))
+						strLineSplit2 = Split(strLineSplit1," ")
+						
+						If strLineSplit2(0) = k.value Then
+							ifDescrValue = strLineSplit2(1)
+						End If
+					Loop
+				objRead.close
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc")
+				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType", ForReading, False)
+					Do While objRead.AtEndOfStream <> True
+						'msgbox strLine
+						strLine = Trim(objRead.Readline)
+						'strLine = Replace (strLine,"RFC1213-MIB::ifType.","")
+						'strLine = Replace (strLine,"""","")
+						'strLineSplit = Split (strLine," ")
+						strLineSplit = Split (strLine,".")
+						strLineSplit1 = strLineSplit(Ubound(strLineSplit,1))
+						strLineSplit2 = Split(strLineSplit1," ")
+					
+						If strLineSplit2(0) = k.value Then
+							ifTypeValue = strLineSplit2(1)
+						End If
+					Loop
+				objRead.close
+				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType")
+				deviceIP = snmpCheck.deviceName.value
+				snmpRO = snmpCheck.snmpRO.value
+				ifSerial = k.value
+				ifDescr = ifDescrValue
+				ifType = ifTypeValue
+				mrtgFolder = snmpCheck.mrtgFolder.value				
+				
+				If (objFSO.FolderExists (mrtgFolder & "\" & deviceIP & "." & ifSerial  )) Then
+					asking = msgbox ("Deleting all previous files at MRTG folder." & vbCR & mrtgFolder & "\" & deviceIP & "." & ifSerial, 1+48,"Delete files folder")
+					If asking = vbOK Then
+						objFSO.DeleteFolder (mrtgFolder & "\" & deviceIP & "." & ifSerial ),false
+					ElseIf asking = vbCancel Then
+						Exit Sub
+					End If					
+				End If
+				If Not(objFSO.FolderExists (mrtgFolder & "\" & deviceIP & "." & ifSerial  )) Then
+					objFSO.CreateFolder mrtgFolder & "\" & deviceIP & "." & ifSerial
+					progress.InnerHTML = "Created MRTG Folder at " & mrtgFolder & "\" & deviceIP & "." & ifSerial
+				End If
+				'If objFSO.FileExists (mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".cfg") Then
+				'	msgbox "Deleting all previous files at MRTG folder." & vbCR & mrtgFolder & "\" & deviceIP & "." & ifSerial
+				'	objShell.Run "cmd /c del " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & "*.*", 0, True
+				'End If				
+				toPlotted = 0
+				Set objWriteHTML = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".index.html", ForWriting, True)
+					For each j in toPlot.mrtgGrpah
+						If j.checked then
+							If toPlotted = 0 Then
+								objWriteHTML.writeline "<!DOCTYPE HTML PUBLIC " & """" & "-//W3C//DTD HTML 4.01 Transitional//EN" & """" & " " & """" & "http://www.w3.org/TR/html4/loose.dtd" & """" & ">"
+								objWriteHTML.writeline "<HTML>"
+								objWriteHTML.writeline "<HEAD>"
+								objWriteHTML.writeline "<TITLE>" & deviceIP & " at " & ifDescr & "</TITLE>"
+								objWriteHTML.writeline "<meta http-equiv=" & """" & "content-type" & """" & " content=" & """" & "text/html; charset=iso-8859-15" & """" & " >"
+								objWriteHTML.writeline "<META HTTP-EQUIV=" & """" & "Refresh" & """" & " CONTENT=" & """" & "300" & """" & " >"
+								objWriteHTML.writeline "<META HTTP-EQUIV=" & """" & "Cache-Control" & """" & " content=" & """" & "no-cache" & """" & " >"
+								objWriteHTML.writeline "<META HTTP-EQUIV=" & """" & "Pragma" & """" & " CONTENT=" & """" & "no-cache" & """" & " >"
+								objWriteHTML.writeline "<LINK HREF=" & """" & "favicon.ico" & """" & " rel=" & """" & "shortcut icon" & """" & " >"
+								objWriteHTML.writeline "<style type=" & """" & "text/css" & """" & ">"
+								objWriteHTML.writeline "</style>"
+								objWriteHTML.writeline "</HEAD>"
+								objWriteHTML.writeline "<BODY bgcolor=" & """" & "#ffffff" & """" & " text=" & """" & "#000000" & """" & " link=" & """" & "#000000" & """" & " vlink=" & """" & "#000000" & """" & " alink=" & """" & "#000000" & """" & ">"
+								objWriteHTML.writeline "<H1>" & deviceIP & " at " & ifDescr & "</H1>"
+								objWriteHTML.writeline "<TABLE BORDER=0 CELLPADDING=0 CELLSPACING=10><tr>"
+							End If								
+							Set objWrite = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".cfg", ForAppending, True)
+							If choosePlot = 0 Then objWrite.writeline "WorkDir: " & mrtgFolder End If
+							choosePlot = 1
+							
+								If j.value = "selectAll" Then
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen") Then
+											Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen", ForReading, False)
+												strLine = Trim(objRead.Readall)
+													If Len (strLine) > 5 Then
+														ifOutQLen = 1
+													End If
+											objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".discards", ForReading, False)
+											strLine = Trim(objRead.ReadAll)
+												If Len (strLine) > 5 Then
+													discards = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions", ForReading, False)
+											strLine = Trim(objRead.Readall)
+												If Len (strLine) > 5 Then
+													collisions = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".errors", ForReading, False)
+											strLine = Trim(objRead.Readall)
+												If Len (strLine) > 5 Then
+													errors = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".crc", ForReading, False)
+											strLine = Trim(objRead.Readall)
+												If Len (strLine) > 5 Then
+													crc = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".drops", ForReading, False)
+											strLine = Trim(objRead.Readall)
+												If Len (strLine) > 5 Then
+													drops = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops")
+									End If
+									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos") Then
+										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos", ForReading, False)
+											strLine = Trim(objRead.Readall)
+												If Len (strLine) > 5 Then
+													ifInUnknownProtos = 1
+												End If
+										objRead.close
+									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos")
+									End If								
+
+								
+										progress.InnerHTML = "Adding Traffic Utilisation"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Utilisation</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "interface.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Traffic Graph" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "interface-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "interface.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then											
+													objWriteHTML.writeline "</tr><tr>"
+												End If
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "interface] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "interface]: " & ifSerial &":" & snmpRO & "@"& deviceIP &":"
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "interface]: \" & ifDescr &":" & snmpRO & "@"& deviceIP
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "interface]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "interface]: 12500000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "interface]: Traffic Analysis for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "interface]: <h1>Traffic Analysis for " & deviceIP & " at " & ifDescr & "</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+											
+									  If ifOutQLen = 1 Then
+										progress.InnerHTML = "Adding Output Queue Length"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Output Queue Length</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Output Queue Length" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1.3.6.1.2.1.2.2.1.21." & ifSerial & "&1.3.6.1.2.1.2.2.1.21." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1.3.6.1.2.1.2.2.1.21\" & ifDescr & "&1.3.6.1.2.1.2.2.1.21\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: length"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]:  Queue"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]:  Queue"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Port output queue length for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: <h1>" & deviceIP & " " & ifDescr & " Output Queue Length</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"						
+									  End If
+									
+									  If discards = 1 Then
+										progress.InnerHTML = "Adding Interface Discards"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Discards</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Discards" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+													objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 1.3.6.1.2.1.2.2.1.13." & ifSerial & "&1.3.6.1.2.1.2.2.1.19." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 1.3.6.1.2.1.2.2.1.13\" & ifDescr & "&1.3.6.1.2.1.2.2.1.19\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Discards/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: discards"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Input discards maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Output discards maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Output"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 4294967296"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Interface Discards for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Discards</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+									  End If
+									  
+									  If collisions = 1 Then
+										progress.InnerHTML = "Adding Interface Collisions"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Collisions</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Collisions" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1.3.6.1.4.1.9.2.2.1.1.25." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.25." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1.3.6.1.4.1.9.2.2.1.1.25\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.25\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Collisions/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: errors"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Interface collisions maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Interface collisions maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]:  Collisions"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]:  Collisions"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,withzeroes"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Port collisions for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: <h1>" & deviceIP & " " & ifDescr & " Collisions</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+									  End If
+									  
+									  If errors = 1 Then
+										progress.InnerHTML = "Adding Interface Errors"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Errors</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Errors" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then											
+													objWriteHTML.writeline "</tr><tr>"
+												End If	
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 1.3.6.1.2.1.2.2.1.14." & ifSerial & "&1.3.6.1.2.1.2.2.1.20." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 1.3.6.1.2.1.2.2.1.14\" & ifDescr & "&1.3.6.1.2.1.2.2.1.20\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Errors/Sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: errors"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Output"									
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Input errors maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Out errors maximum per interval on graph"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 4294967296"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Port error for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Errors</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"	
+
+									  End If
+									  
+									  If crc = 1 Then
+										progress.InnerHTML = "Adding CRC errors"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface CRC</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " CRC" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If							
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 1.3.6.1.4.1.9.2.2.1.1.12." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.12." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 1.3.6.1.4.1.9.2.2.1.1.12\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.12\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: CRC/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: errors"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Interface CRC maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Interface CRC maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]:  CRC"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]:  CRC"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,withzeroes"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 12500"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Port CRC for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: <h1>" & deviceIP & " " & ifDescr & " CRC</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"									
+									  End If
+									  
+									  If drops = 1 Then
+										progress.InnerHTML = "Adding Queue Drops"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Queue Drops</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Drops" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If			
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 1.3.6.1.4.1.9.2.2.1.1.26." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.27." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 1.3.6.1.4.1.9.2.2.1.1.26\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.27\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Queue Drops/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: drops"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Input drops maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Output drops maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Output"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,withzeroes"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 12500"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Interface Queue Drops for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Output Queue Drops</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+									  End If
+									  
+									  If ifInUnknownProtos  = 1 Then
+										progress.InnerHTML = "Adding Unknown Protocol Input"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Unknown Protocol Input</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Unknown Protocol Input" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1.3.6.1.2.1.2.2.1.15." & ifSerial & "&1.3.6.1.2.1.2.2.1.15." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1.3.6.1.2.1.2.2.1.15\" & ifDescr & "&1.3.6.1.2.1.2.2.1.15\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Protocols/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: protocols"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Input Unknown Protocols maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Input Unknown Protocols maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]:  Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]:  Input"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Port input unknown protocol for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Unknown Protocol</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"									
+									  End If
+								
+									j.value = ""
+								Else
+									Select Case j.value
+									  Case "uitilised"
+										progress.InnerHTML = "Adding Traffic Utilisation"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Utilisation</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "interface.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Traffic Graph" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "interface-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "interface.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then											
+													objWriteHTML.writeline "</tr><tr>"
+												End If
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "interface] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "interface]: " & ifSerial &":" & snmpRO & "@"& deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "interface]: \" & ifDescr &":" & snmpRO & "@"& deviceIP
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "interface]: MRTG_INT_IP="& """" & deviceIP & """" & " MRTG_INT_DESCR=" & """" & ifDescr & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "interface]: 12500000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "interface]: Traffic Analysis for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "interface]: <h1>Traffic Analysis for " & deviceIP & " at " & ifDescr & "</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+											
+									  Case "ifOutQLen"
+										progress.InnerHTML = "Adding Output Queue Length"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Output Queue Length</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Output Queue Length" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifOutQLen.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1.3.6.1.2.1.2.2.1.21." & ifSerial & "&1.3.6.1.2.1.2.2.1.21." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1.3.6.1.2.1.2.2.1.21\" & ifDescr & "&1.3.6.1.2.1.2.2.1.21\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: length"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Output Queue maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]:  Queue"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]:  Queue"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: Port output queue length for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifOutQLen" & "]: <h1>" & deviceIP & " " & ifDescr & " Output Queue Length</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"						
+											
+									  Case "discards"
+										progress.InnerHTML = "Adding Interface Discards"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Discards</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Discards" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifDiscards.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+													objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 1.3.6.1.2.1.2.2.1.13." & ifSerial & "&1.3.6.1.2.1.2.2.1.19." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 1.3.6.1.2.1.2.2.1.13\" & ifDescr & "&1.3.6.1.2.1.2.2.1.19\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Discards/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: discards"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Input discards maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Output discards maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Output"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: 4294967296"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: Interface Discards for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifDiscards" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Discards</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+
+									  Case "collisions"
+										progress.InnerHTML = "Adding Interface Collisions"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Collisions</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Collisions" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifCollisions.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: no"
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1.3.6.1.4.1.9.2.2.1.1.25." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.25." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1.3.6.1.4.1.9.2.2.1.1.25\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.25\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Collisions/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: errors"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Interface collisions maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Interface collisions maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]:  Collisions"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]:  Collisions"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: Port collisions for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCollisions" & "]: <h1>" & deviceIP & " " & ifDescr & " Collisions</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+											
+									  Case "error"
+										progress.InnerHTML = "Adding Interface Errors"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Errors</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Errors" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifErrors.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then											
+													objWriteHTML.writeline "</tr><tr>"
+												End If	
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 1.3.6.1.2.1.2.2.1.14." & ifSerial & "&1.3.6.1.2.1.2.2.1.20." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 1.3.6.1.2.1.2.2.1.14\" & ifDescr & "&1.3.6.1.2.1.2.2.1.20\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Errors/Sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: errors"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Output"									
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Input errors maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Out errors maximum per interval on graph"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: 4294967296"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: Port error for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifErrors" & "]: <h1>" & deviceIP & " " & ifDescr & " In,Out Errors</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"	
+
+									  Case "crc"
+										progress.InnerHTML = "Adding CRC errors"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface CRC</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " CRC" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifCRC.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If							
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 1.3.6.1.4.1.9.2.2.1.1.12." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.12." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 1.3.6.1.4.1.9.2.2.1.1.12\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.12\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: CRC/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: errors"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Interface CRC maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Interface CRC maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]:  CRC"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]:  CRC"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: 12500"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: Port CRC for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifCRC" & "]: <h1>" & deviceIP & " " & ifDescr & " CRC</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"									
+
+									  Case "drops"
+										progress.InnerHTML = "Adding Queue Drops"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Interface Queue Drops</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Drops" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifQueueDrops.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If			
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 1.3.6.1.4.1.9.2.2.1.1.26." & ifSerial & "&1.3.6.1.4.1.9.2.2.1.1.27." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 1.3.6.1.4.1.9.2.2.1.1.26\" & ifDescr & "&1.3.6.1.4.1.9.2.2.1.1.27\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Queue Drops/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: drops"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Input drops maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Output drops maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Output"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: nopercent,gauge,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: 12500"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: Interface Queue Drops for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifQueueDrops" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Output Queue Drops</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"
+
+									  Case "ifInUnknownProtos"
+										progress.InnerHTML = "Adding Unknown Protocol Input"
+												toPlotted = toPlotted + 1
+												objWriteHTML.writeline "<td><DIV><B>Unknown Protocol Input</B></DIV>"
+												objWriteHTML.writeline "<DIV><A HREF=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos.html" & """" 
+												objWriteHTML.writeline "><IMG BORDER=1 title=" & """" & deviceIP & " Unknown Protocol Input" & """" 
+												objWriteHTML.writeline "SRC=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos-day.png" & """" & "></A><BR>"
+												objWriteHTML.writeline "<SMALL><!--#flastmod file=" & """" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos.html" & """" & " --></SMALL></DIV></td>"
+												If (toPlotted mod 2) = 0 Then
+												objWriteHTML.writeline "</tr><tr>"
+												End If				
+											objWrite.writeline "Directory[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "] : " & deviceIP & "." & ifSerial
+											'objWrite.writeline "EnableIPv6[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: no"
+											'objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1.3.6.1.2.1.2.2.1.15." & ifSerial & "&1.3.6.1.2.1.2.2.1.15." & ifSerial & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "Target[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1.3.6.1.2.1.2.2.1.15\" & ifDescr & "&1.3.6.1.2.1.2.2.1.15\" & ifDescr & ":" & snmpRO & "@" & deviceIP
+											objWrite.writeline "YLegend[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Protocols/sec"
+											objWrite.writeline "ShortLegend[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: protocols"
+											objWrite.writeline "Legend1[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Input Unknown Protocols maximum per interval on graph"
+											objWrite.writeline "Legend2[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Input Unknown Protocols maximum per interval on graph"
+											objWrite.writeline "LegendI[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]:  Input"
+											objWrite.writeline "LegendO[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]:  Input"
+											'objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: unknaszero"
+											objWrite.writeline "Options[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: nopercent,withzeroes"
+											objWrite.writeline "Colours[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: GREEN#00eb0c,BLUE#0000ff,GRAY#AAAAAA,VIOLET#ff00ff"
+											objWrite.writeline "SetEnv[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: MRTG_INT_IP=" & """" & """" & " MRTG_INT_DESCR=" & """" & """"
+											objWrite.writeline "MaxBytes[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: 1250000"
+											objWrite.writeline "Title[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: Port input unknown protocol for " & deviceIP & " " & ifDescr
+											objWrite.writeline "PageTop[" & deviceIP & "." & ifSerial & "." & "ifInUnknownProtos" & "]: <h1>" & deviceIP & " " & ifDescr & " Input Unknown Protocol</h1>"
+											objWrite.writeline "		<div id=" & """" & "sysdetails" & """" & ">"
+											objWrite.writeline "			<table>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Maintainer:</td>"
+											objWrite.writeline "					<td>SSC NOC TECH</td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Description:</td>"
+											objWrite.writeline "					<td>" & ifDescr & "  </td>"
+											objWrite.writeline "				</tr>"
+											objWrite.writeline "				<tr>"
+											objWrite.writeline "					<td>Type:</td>"
+											objWrite.writeline "					<td>" & ifType & "</td>"
+											objWrite.writeline "				</tr>"		
+											objWrite.writeline "			</table>"
+											objWrite.writeline "		</div>"									
+
+									End Select
+								End If
+							objWrite.close
+							
+							Set objWrite1 = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".bat", ForWriting, True)
+								objWrite1.write "wperl " & mrtgFolder & "\bin\mrtg " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".cfg"
+								objWrite1.close
+							Set objWrite2 = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbs", ForWriting, True)
+								objWrite2.writeline "Set WshShell = WScript.CreateObject("& """" & "WScript.Shell" & """" &")"
+								objWrite2.writeline "stringCall = " & """" & """" & """" & """" & " & " & """" & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".bat" & """" & " & " & """" & """" & """" & """"
+								objWrite2.writeline "WshShell.Run stringCall, 0, True"
+								objWrite2.writeline "Set WshShell = Nothing"
+								objWrite2.close
+
+								Set WshScriptingEncoder = CreateObject("Scripting.Encoder")
+								Set fileName = objFSO.GetFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbs")
+								Set objStream = objFSO.GetFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbs").OpenAsTextStream(1)
+								strSourceFile = objStream.ReadAll
+								objStream.Close
+								strEncFile = WshScriptingEncoder.EncodeScriptFile(".vbs",strSourceFile, 0, "")
+								Set objEncFile = objFSO.CreateTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbe",ForWriting,True)
+								objEncFile.Write strEncFile
+								objEncFile.Close
+								'fileName.close
+								objFSO.DeleteFile(fileName)
+								Set fileName = Nothing
+								Set WshScriptingEncoder = Nothing
+								Set objStream = Nothing
+								Set objEncFile = Nothing
+								
+							stringCallOut = mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbe"
+							progress.InnerHTML = "Creating files at MRTG folder. <br><b>" & mrtgFolder & "\" & deviceIP & "." & ifSerial & "</b>"
+							document.body.style.cursor = "wait"						
+							objShell.Run stringCallOut, 0, True
+							progress.InnerHTML = "Creating files at MRTG folder. <br><b>" & mrtgFolder & "\" & deviceIP & "." & ifSerial & "</b>"
+							document.body.style.cursor = "wait"
+							objShell.Run stringCallOut, 0, True
+							progress.InnerHTML = "Creating files at MRTG folder. <br><b>" & mrtgFolder & "\" & deviceIP & "." & ifSerial & "</b>"
+							document.body.style.cursor = "wait"						
+							objShell.Run stringCallOut, 0, True
+							document.body.style.cursor = "auto"						
+							progress.InnerHTML = "<font color=green>Completed MRTG files creation.<font>"
+						ElseIf choosePlot = 0 Then
+							progress.InnerHTML = "<font color=red>Please select at least one type of graph to plot.<font>"
+							choosePlot = 0
+						End If
+					Next
+				objWriteHTML.writeline "<td></td></tr></TABLE></BODY></HTML>"
+				objWriteHTML.close
+					
+			Else
+				progress.InnerHTML = "<font color=red>Missing snmp result files.</font>"
+			End If
+		End If
+	Next
+	If chooseInterface = 0 Then
+		progress.InnerHTML = "<font color=red>Please select an interface at Step 2."
+	End If
+	If not(choosePlot = 0) and not(chooseInterface = 0) Then
+	finalResults.InnerHTML = "<hr>Device : " & snmpCheck.deviceName.value & "<br>MRTG page : " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".index.html<br>5min script file : " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbe"
+	End If
+	
+Set objFSO = Nothing
+Set objShell = Nothing
+End Sub
+
+</SCRIPT>
+<body>
+<table width="100%">
+<tr>
+<td width="80%">Script status : <span id=progress></span></td>
+<td width="20%"><input id=runbutton  class="button" type="button" value="Reset Window" name="restartedwindow"  onClick="RunReload">
+</tr>
+</table>
+<hr>
+<table width="100%">
+<form name="snmpCheck">
+ <tr> <td width="100%" colspan =2 >Step 1</td></tr>
+  <tr>
+    <td width="40%" valign="top">Device Name/IP: </td><td width="25%" valign="top"><input type="input" name="deviceName" size="30" value = "192.168.11.114"></td><td width="25%" valign="top"><span id=nameCheck></span></td>
+  </tr>
+  <tr>
+    <td width="40%" valign="top">SNMP RO : </td><td width="25%" valign="top"><input type="input" name="snmpRO" size="30" value = "private"></td><td width="25%" valign="top"><span id=snmpROcheck></span></td>
+  </tr>  
+  <tr>
+    <td width="40%" valign="top">MRTG Folder : </td><td width="25%" valign="top"><input type="input" name="mrtgFolder" size="30" value = "c:\mrtg-2.17.4"></td><td width="25%" valign="top"><span id=mrtgFolderCheck></span></td>
+  </tr>   
+  <tr>
+    <td width="40%" valign="top"></td><td width="25%" align=middle><input id=runbutton  class="button" type="button" value="List interface index" name="snmp_index"  onClick="snmp_lists"> </td><td width="50%" valign="top"><span id=snmpTest></span></td>
+  </tr>    
+</table>
+</form>
+<hr>
+<span id=interfaceIndex>
+</span>
+<span id=finalResults></span>
+</body>
+</html>
+
+
+
+
+
+
+
