@@ -4,3 +4,5 @@ Mostly requested, adhoc monitoring interface info, are added.
 
 Does not meant to replace the main interface data collection application. 
 Only meant to create adhoc monitoring for access switch which is not included in the overall NMM setup.
+
+Due to nature of creating files and folders, some anti-virus apps may see this as an intrusion. 
