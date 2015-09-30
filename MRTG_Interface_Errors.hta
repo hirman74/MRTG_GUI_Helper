@@ -1156,7 +1156,7 @@ Sub mrtgFiles
 							objWrite.close
 							
 							Set objWrite1 = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".bat", ForWriting, True)
-								objWrite1.write "wperl " & mrtgFolder & "\bin\mrtg " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".cfg"
+								objWrite1.write snmpCheck.perlBIN.value & " " & mrtgFolder & "\bin\mrtg " & mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".cfg"
 								objWrite1.close
 							Set objWrite2 = objFSO.OpenTextFile(mrtgFolder & "\" & deviceIP & "." & ifSerial & "\" & deviceIP & "." & ifSerial & ".vbs", ForWriting, True)
 								objWrite2.writeline "Set WshShell = WScript.CreateObject("& """" & "WScript.Shell" & """" &")"
@@ -1238,6 +1238,9 @@ End Sub
   <tr>
     <td width="40%" valign="top">MRTG Folder : </td><td width="25%" valign="top"><input type="input" name="mrtgFolder" size="30" value = "c:\mrtg-2.17.4"></td><td width="25%" valign="top"><span id=mrtgFolderCheck></span></td>
   </tr>   
+  <tr>
+    <td width="40%" valign="top">Perl binary installed : </td><td width="25%" valign="top"><input type="input" name="perlBIN" size="30" value = "perl"></td><td width="25%" valign="top"><span id=perlBINCheck></span></td>
+  </tr>  
   <tr>
     <td width="40%" valign="top"></td><td width="25%" align=middle><input id=runbutton  class="button" type="button" value="List interface index" name="snmp_index"  onClick="snmp_lists"> </td><td width="50%" valign="top"><span id=snmpTest></span></td>
   </tr>    
