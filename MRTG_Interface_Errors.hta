@@ -306,7 +306,7 @@ Sub mrtgFiles
 						End If
 					Loop
 				objRead.close
-				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc")
+				objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifDesc")
 				Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType", ForReading, False)
 					Do While objRead.AtEndOfStream <> True
 						'msgbox strLine
@@ -323,18 +323,18 @@ Sub mrtgFiles
 						End If
 					Loop
 				objRead.close
-				'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType")
+				objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifType")
 				deviceIP = snmpCheck.deviceName.value
 				snmpRO = snmpCheck.snmpRO.value
 				ifSerial = k.value
-				ifDescr = ifDescrValue
+				ifDescr = Replace(ifDescrValue,"""","")
 				ifType = ifTypeValue
 				mrtgFolder = snmpCheck.mrtgFolder.value				
 				
 				If (objFSO.FolderExists (mrtgFolder & "\" & deviceIP & "." & ifSerial  )) Then
 					asking = msgbox ("Deleting all previous files at MRTG folder." & vbCR & mrtgFolder & "\" & deviceIP & "." & ifSerial, 1+48,"Delete files folder")
 					If asking = vbOK Then
-						objFSO.DeleteFolder (mrtgFolder & "\" & deviceIP & "." & ifSerial ),false
+						objFSO.DeleteFolder (mrtgFolder & "\" & deviceIP & "." & ifSerial  ),false
 					ElseIf asking = vbCancel Then
 						Exit Sub
 					End If					
@@ -380,7 +380,7 @@ Sub mrtgFiles
 														ifOutQLen = 1
 													End If
 											objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifOutQLen")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".discards", ForReading, False)
@@ -389,7 +389,7 @@ Sub mrtgFiles
 													discards = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".discards")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions", ForReading, False)
@@ -398,7 +398,7 @@ Sub mrtgFiles
 													collisions = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".collisions")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".errors", ForReading, False)
@@ -407,7 +407,7 @@ Sub mrtgFiles
 													errors = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".errors")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".crc", ForReading, False)
@@ -416,7 +416,7 @@ Sub mrtgFiles
 													crc = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".crc")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".drops", ForReading, False)
@@ -425,7 +425,7 @@ Sub mrtgFiles
 													drops = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".drops")
 									End If
 									If objFSO.FileExists (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos") Then
 										Set objRead = objFSO.OpenTextFile(".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos", ForReading, False)
@@ -434,7 +434,7 @@ Sub mrtgFiles
 													ifInUnknownProtos = 1
 												End If
 										objRead.close
-									'objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos")
+									objFSO.DeleteFile (".\bin\" & trim(snmpCheck.deviceName.value) & ".ifInUnknownProtos")
 									End If								
 
 								
